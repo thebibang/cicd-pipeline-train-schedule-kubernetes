@@ -33,7 +33,7 @@ pipeline {
                 script {
                     docker.withRegistry('https://registry.hub.docker.com', 'dockerhub') {
                         app.push("${env.BUILD_NUMBER}")
-                        app.push("latest")
+                        app.push("test")
                     }
                 }
             }
@@ -45,7 +45,11 @@ pipeline {
             steps {
                 input 'Deploy to Production?'
                 milestone(1)
-                
+                kubernetesDeploy(
+                    kubeconfigId: 'kubernetes',
+                    configs: 'train-schedule-kube.yml',
+                    enableConfigSubstitution: true
+                )  
             }
         }
     }
