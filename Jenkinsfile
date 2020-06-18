@@ -1,18 +1,28 @@
-pipeline {
+pipeline{
     agent any
-    environment {
-        //be sure to replace "willbla" with your own Docker Hub username
-        DOCKER_IMAGE_NAME = "thebibang/train-schedule"
+    environment{
+        DOCKER_IMAGE_NAME = "thebibang/testimage"
     }
-    stages {
-        stage('Build') {
-            steps {
-                echo 'Running build automation'
-                sh './gradlew build --no-daemon'
+    stages{
+        stage("Build Application"){
+            steps{
+                echo "========executing Build Application========"
+                sh '././gradlew build --no-daemon'
                 archiveArtifacts artifacts: 'dist/trainSchedule.zip'
             }
+            post{
+                always{
+                    echo "========always========"
+                }
+                success{
+                    echo "========A executed successfully========"
+                }
+                failure{
+                    echo "========A execution failed========"
+                }
+            }
         }
-        stage('Build Docker Image') {
+        stage("Build Docker Image of test app"){
             when {
                 branch 'master'
             }
@@ -20,12 +30,13 @@ pipeline {
                 script {
                     app = docker.build(DOCKER_IMAGE_NAME)
                     app.inside {
-                        sh 'echo Hello, World!'
+                        sh 'echo hello, World!'
                     }
                 }
+                
             }
         }
-        stage('Push Docker Image') {
+        stage("Push Docker Image to my Repository"){
             when {
                 branch 'master'
             }
@@ -36,21 +47,33 @@ pipeline {
                         app.push("new")
                     }
                 }
+
             }
         }
-        stage('DeployToProduction') {
+        stage ("Deploy to Production") {
             when {
                 branch 'master'
             }
             steps {
-                input 'Deploy to Production?'
+                input 'Deploy to Production ?'
                 milestone(1)
                 kubernetesDeploy(
                     kubeconfigId: 'kubernetes',
                     configs: 'train-schedule-kube.yml',
                     enableConfigSubstitution: true
-                )  
+                )
             }
+        }
+    }
+    post{
+        always{
+            echo "========always========"
+        }
+        success{
+            echo "========pipeline executed successfully ========"
+        }
+        failure{
+            echo "========pipeline execution failed========"
         }
     }
 }
